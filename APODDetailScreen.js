@@ -141,6 +141,7 @@ const APODDetailScreen = ({ route, navigation }) => {
             </View>
         </ScrollView>
     );
+    
 };
 
 // Estilos para a Tela de Detalhes
@@ -222,7 +223,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         marginHorizontal: 30,
-    }
+    },
+    translationWarning: {
+    color: 'orange',
+    fontStyle: 'italic',
+    fontSize: 14,
+    marginBottom: 8,
+},
+
 });
 
 export default APODDetailScreen;

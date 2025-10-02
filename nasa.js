@@ -1,88 +1,66 @@
-/**
- * ARQUIVO: nasa.js
- * DESCRIÇÃO: Serviço de consumo da API 'Astronomy Picture of the Day (APOD)' da NASA.
- * Responsável por montar a URL, fazer a requisição HTTP e tratar a resposta.
- * * Refatorado para a Raiz: O nome do arquivo foi simplificado.
- */
-
-// Chave da API da NASA fornecida pelo aluno
-const NASA_API_KEY = 'dLFQvAYzFZUXVqCQLEUFkCWTCoGOoh8KP7rNsLNw';
-// URL base para a API APOD
-const APOD_BASE_URL = 'https://api.nasa.gov/planetary/apod';
+// Configuração da chave de API da NASA (APOD)
+const NASA_API_KEY = "dLFQvAYzFZUXVqCQLEUFkCWTCoGOoh8KP7rNsLNw";
+const NASA_APOD_URL = "https://api.nasa.gov/planetary/apod";
 
 /**
- * Função utilitária para formatar uma data como 'YYYY-MM-DD'.
- * @param {Date} date - Objeto Date a ser formatado.
- * @returns {string} Data formatada.
+ * Função utilitária para converter uma data subtraindo um número específico de dias.
+ * @param {number} days - Número de dias a subtrair.
+ * @returns {string} Data no formato 'YYYY-MM-DD'.
  */
-const formatDate = (date) => {
+const getFormattedDate = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+
     const year = date.getFullYear();
-    // getMonth() retorna 0-11. Adiciona 1 e formata com zero à esquerda.
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    // getDate() retorna o dia, formatado com zero à esquerda.
     const day = String(date.getDate()).padStart(2, '0');
+
     return `${year}-${month}-${day}`;
 };
 
 /**
- * Função para buscar os dados APOD dos últimos 30 dias.
- * A API da NASA é chamada com um intervalo de datas.
- * @returns {Promise<Array<Object>>} Uma Promise que resolve para um array de objetos APOD.
- * @throws {Error} Se a requisição falhar ou a resposta for inválida.
+ * Busca os dados da NASA APOD dos últimos 5 dias.
+ * Retorna os dados com explicações originais em inglês.
+ * @returns {Promise<Array<Object>>} Lista de APODs formatados.
  */
 export const fetchApods = async () => {
-    // 1. Calcula a data final (hoje)
-    const endDate = new Date();
-    
-    // 2. Calcula a data inicial (30 dias atrás)
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 29); // 30 dias, incluindo hoje.
-
-    // 3. Formata as datas para a URL da API
-    const formattedStartDate = formatDate(startDate);
-    const formattedEndDate = formatDate(endDate);
-
-    // 4. Monta a URL completa com a chave e o intervalo
-    const url = `${APOD_BASE_URL}?api_key=${NASA_API_KEY}&start_date=${formattedStartDate}&end_date=${formattedEndDate}`;
-
-    console.log(`Buscando dados da URL: ${url}`);
-    
     try {
+        const endDate = getFormattedDate(0); // Hoje
+        const startDate = getFormattedDate(5); // Últimos 5 dias
+
+        const url = `${NASA_APOD_URL}?api_key=${NASA_API_KEY}&start_date=${startDate}&end_date=${endDate}`;
         const response = await fetch(url);
 
-        // Verifica se a resposta HTTP é bem-sucedida (status 200)
         if (!response.ok) {
-            // Tenta obter a mensagem de erro do corpo da resposta
-            const errorData = await response.json();
-            const errorMessage = errorData.msg || `Erro HTTP: ${response.status}`;
-            throw new Error(`Falha ao carregar dados da NASA: ${errorMessage}`);
+            throw new Error(`Erro ao buscar dados da NASA: ${response.status}`);
         }
 
-        const data = await response.json();
+        let apods = await response.json();
+        apods.reverse();
 
-        // A API APOD retorna um array de objetos (um para cada dia no intervalo)
-        // Inverte a ordem para que os mais recentes apareçam primeiro na lista.
-        const sortedData = data.reverse().map((item, index) => ({
-            // Adiciona um ID único para o FlatList e mantém as propriedades originais
-            id: item.date || index.toString(), // Usa a data como ID ou índice como fallback
-            ...item,
-            // Normaliza a data para exibição
-            displayDate: new Date(item.date).toLocaleDateString('pt-BR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            })
-        }));
-
-        // Filtra quaisquer itens que não sejam imagens ou vídeos (como 'audio' ou 'other')
-        const filteredData = sortedData.filter(item => 
-            item.media_type === 'image' || item.media_type === 'video'
+        const filteredApods = apods.filter(apod =>
+            apod.media_type === 'image' || (apod.media_type === 'video' && apod.url)
         );
 
-        return filteredData;
+        const formattedApods = filteredApods.map((apod) => {
+            const finalUrl = apod.media_type === 'video'
+                ? apod.url.replace("youtube.com/watch?v=", "youtube.com/embed/")
+                : apod.url;
+
+            return {
+                ...apod,
+                url: finalUrl,
+                explanation: apod.explanation,
+                date: apod.date,
+                id: apod.date,
+                displayDate: new Date(apod.date).toLocaleDateString('pt-BR'),
+            };
+        });
+
+        return formattedApods;
 
     } catch (error) {
-        // Lança um erro mais amigável para a UI
-        throw new Error(`Não foi possível conectar ao servidor da NASA. Verifique sua rede. Detalhe: ${error.message}`);
+        console.error("Erro fatal em fetchApods:", error);
+        return [];
     }
 };
