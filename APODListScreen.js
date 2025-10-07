@@ -1,22 +1,12 @@
-/**
- * ARQUIVO: APODListScreen.js
- * DESCRIÇÃO: Tela principal de consulta.
- * Busca os dados da API APOD e exibe em uma FlatList.
- * * Refatorado para a Raiz: O nome do arquivo foi simplificado.
- */
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, SafeAreaView, RefreshControl } from 'react-native';
-import { fetchApods } from './nasa'; // Importação direta
-import APODCard from './APODCard'; // Importação direta
+import { fetchApods } from './nasa';
+import APODCard from './APODCard'; 
 
 const APODListScreen = ({ navigation }) => {
-    // Estado para armazenar os dados da API
     const [apods, setApods] = useState([]);
-    // Estado para gerenciar o carregamento
-    const [isLoading, setIsLoading] = useState(true); // <--- CORREÇÃO AQUI: USANDO useState(true)
-    // Estado para gerenciar erros
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    // Estado para gerenciar o refresh manual (pull to refresh)
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     /**
@@ -37,14 +27,9 @@ const APODListScreen = ({ navigation }) => {
         }
     }, []);
 
-    // Efeito para carregar os dados ao montar o componente
     useEffect(() => {
         loadApods();
     }, [loadApods]);
-
-    // ===============================================
-    // Funções de Renderização
-    // ===============================================
 
     // 1. Renderiza o Estado de Carregamento Inicial
     if (isLoading) {
@@ -66,10 +51,9 @@ const APODListScreen = ({ navigation }) => {
         );
     }
 
-    // 3. Função para lidar com o clique no card (CRÍTICO)
+    // 3. Função para lidar com o clique no card (Navegação)
     const handlePressCard = (item) => {
-        // Navega para a tela 'Detalhes', passando o objeto 'item' como parâmetro
-        // O nome 'item' deve ser EXATAMENTE 'item' para a tela de detalhes
+        // Navega para a tela 'Detalhes', passando o objeto na chave 'item'
         navigation.navigate('Detalhes', { item: item }); 
     };
 
@@ -77,7 +61,7 @@ const APODListScreen = ({ navigation }) => {
     const renderItem = ({ item }) => (
         <APODCard 
             item={item} 
-            onPress={() => handlePressCard(item)} // Passa a função de navegação
+            onPress={() => handlePressCard(item)}
         />
     );
 
@@ -89,11 +73,11 @@ const APODListScreen = ({ navigation }) => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.date}
                 contentContainerStyle={styles.listContent}
-                refreshControl={ // Adiciona a funcionalidade de "pull to refresh"
+                refreshControl={
                     <RefreshControl
                         refreshing={isRefreshing}
                         onRefresh={loadApods}
-                        tintColor="#FFFFFF" // Cor do ícone de refresh
+                        tintColor="#FFFFFF" 
                     />
                 }
             />
@@ -105,7 +89,7 @@ const APODListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0A0A0A', // Fundo preto espacial
+        backgroundColor: '#0A0A0A',
     },
     listContent: {
         padding: 8,
